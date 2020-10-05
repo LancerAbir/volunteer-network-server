@@ -7,8 +7,12 @@ require("dotenv").config();
 const bodyParser = require("body-parser");
 const cors = require("cors");
 
+//** Import JWT Private Key Path  */
+var admin = require("firebase-admin");
+
 //** MongoDB Import */
 const MongoClient = require("mongodb").MongoClient;
+const ObjectId = require("mongodb").ObjectId;
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.0evig.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 
 //** PORT */
@@ -31,6 +35,14 @@ const middleware = [
 app.use(middleware);
 
 
+//** JWT Private Key Path  */
+var serviceAccount = require("./config/volunteer-mern-project-firebase-adminsdk-gbnhh-ebba0ce8c5.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount),
+  databaseURL: "https://volunteer-mern-project.firebaseio.com"
+});
+
 
 //** Root Route */
 app.get("/", (req, res) => {
@@ -38,7 +50,6 @@ app.get("/", (req, res) => {
 });
 
 
-// const claster = allEvents
 
 
 //** MongoDB Set Up */
@@ -52,6 +63,7 @@ client.connect((err) => {
         .collection(`${process.env.DB_COLLECTION}`);
     // perform actions on the collection object
     console.log("Fake Data Database Has Successfully Connected");
+
 
     //** POST --> Insert Data & Save Database (Fake Data) */
     app.post("/addVolunteer", (req, res) => {
@@ -85,6 +97,7 @@ clientEvents.connect((err) => {
     // perform actions on the collection object
     console.log("Events Database Has Successfully Connected");
 
+
     //** POST --> Insert Data & Save Database (Events Data) */
     app.post("/addEvents", (req, res) => {
         const newEvents = req.body
@@ -97,11 +110,37 @@ clientEvents.connect((err) => {
 
     //** GET --> Show All Events Data */
     app.get("/events", (req, res) => {
-        const queryEmail = req.query.email
-        volunteerCollection.find({email: queryEmail})
-        .toArray((error, documents) => {
-            res.send(documents)
-        })
+        const bearer = req.headers.authorization
+
+        if (bearer && bearer.startsWith('Bearer ')) {
+            const idToken = bearer.split(' ')[1]
+            admin.auth().verifyIdToken(idToken)
+                .then(function(decodedToken) {
+                const tokenEmail = decodedToken.email;
+                const queryEmail = req.query.email
+                if (tokenEmail == queryEmail) {
+                    volunteerCollection.find({email: queryEmail})
+                    .toArray((error, documents) => {
+                        res.status(200).send(documents)
+                    })
+                } else {
+                    res.status(401).send('Un Authorized Access')
+                }
+                // ...
+                }).catch(function(error) {
+                    res.status(401).send('Un Authorized Access')
+                });
+        } else {
+            res.status(401).send('Un Authorized Access')
+        }
+    })
+
+    //**  DELETE --> Single Event Delete */
+    app.delete("/eventdelete/:id", (req, res ) => {
+         volunteerCollection.deleteOne({_id: req.params.id})
+            .then( result => {
+                console.log(result);
+            })
     })
 
 });
@@ -136,6 +175,15 @@ clientAdmin.connect((err) => {
             res.send(documents)
         })
     })
+
+       //**  DELETE --> Single Event Delete */
+       app.delete("/userdelete/:id", (req, res ) => {
+        volunteerCollection.deleteOne({_id: ObjectId(req.params.id)})
+           .then( result => {
+               console.log(result);
+           })
+   })
+
 
 });
 
