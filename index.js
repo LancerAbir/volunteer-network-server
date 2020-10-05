@@ -12,7 +12,6 @@ var admin = require("firebase-admin");
 
 //** MongoDB Import */
 const MongoClient = require("mongodb").MongoClient;
-const ObjectId = require("mongodb").ObjectId;
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.0evig.mongodb.net/${process.env.DB_NAME}?retryWrites=true&w=majority`;
 
 //** PORT */
@@ -65,10 +64,12 @@ client.connect((err) => {
     console.log("Fake Data Database Has Successfully Connected");
 
 
+   
+    
     //** POST --> Insert Data & Save Database (Fake Data) */
     app.post("/addVolunteer", (req, res) => {
         const newVolunteer = req.body;
-        volunteerCollection.insertMany(newVolunteer)
+        volunteerCollection.insertOne(newVolunteer)
         .then((result) => {
             console.log(result.insertedCount);
             res.send(result.insertedCount > 0)
@@ -82,6 +83,8 @@ client.connect((err) => {
             res.send(documents)
         })
     })
+
+
 });
 
 
@@ -178,7 +181,7 @@ clientAdmin.connect((err) => {
 
        //**  DELETE --> Single Event Delete */
        app.delete("/userdelete/:id", (req, res ) => {
-        volunteerCollection.deleteOne({_id: ObjectId(req.params.id)})
+        volunteerCollection.deleteOne({_id: req.params.id})
            .then( result => {
                console.log(result);
            })
