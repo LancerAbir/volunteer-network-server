@@ -35,7 +35,7 @@ app.use(middleware);
 
 
 //** JWT Private Key Path  */
-var serviceAccount = require("./config/volunteer-mern-project-firebase-adminsdk-gbnhh-ebba0ce8c5.json");
+var serviceAccount = require("./volunteer-mern-project-firebase-adminsdk-gbnhh-ebba0ce8c5.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
